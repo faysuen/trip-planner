@@ -10,9 +10,12 @@ export interface CandidatePoi {
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /**
- * 让LLM只做它擅长的事：根据目的地+偏好给出候选景点清单和推荐理由。
- * 明确不要求LLM给出经纬度或访问顺序——这两件事分别交给地图API的
- * geocoding服务和 lib/geo 的聚类/排序算法处理，避免LLM编造坐标。
+ * Lets the LLM do only what it's good at: given a destination + travel
+ * style, suggest a list of candidate points of interest with reasoning.
+ * Deliberately does NOT ask the LLM for coordinates or visiting order —
+ * those are handled separately by the maps API's geocoding service and by
+ * the lib/geo clustering/ordering algorithm, to avoid the LLM hallucinating
+ * coordinates.
  */
 export async function generateCandidatePois(params: {
   destination: string;
@@ -21,8 +24,9 @@ export async function generateCandidatePois(params: {
 }): Promise<CandidatePoi[]> {
   const { destination, days, preference } = params;
 
-  // 候选点数量留一些冗余，方便聚类阶段筛选和地理分组，
-  // 经验值：每天3-5个点，总数按天数*4再加缓冲
+  // Leave some buffer in the candidate count so the clustering step has
+  // room to filter and group geographically. Rule of thumb: 3-5 per day,
+  // total = days * 4 + a small buffer.
   const targetCount = Math.min(30, days * 4 + 4);
 
   const response = await anthropic.messages.create({
@@ -31,21 +35,21 @@ export async function generateCandidatePois(params: {
     messages: [
       {
         role: "user",
-        content: `你是一个旅行行程规划助手。目的地：${destination}，行程天数：${days}天，
-人群偏好：${preference}。
+        content: `You are a travel itinerary assistant. Destination: ${destination}, trip length: ${days} days,
+travel style: ${preference}.
 
-请给出约${targetCount}个候选景点/餐厅/体验点，只返回JSON数组，不要有任何其他文字、不要markdown代码块标记。
-每个元素格式：
-{"name": "地点名称（用当地通用英文名或官方名，方便后续做地图geocoding）", "category": "sightseeing|food|nature|culture|shopping", "durationMin": 建议停留分钟数, "reason": "一句话推荐理由"}
+Suggest about ${targetCount} candidate sights/restaurants/experiences. Return ONLY a JSON array, no other text, no markdown code fences.
+Each element format:
+{"name": "place name (use the commonly used English or official name, to make later map geocoding easier)", "category": "sightseeing|food|nature|culture|shopping", "durationMin": suggested minutes on site, "reason": "one-sentence reason to recommend it"}
 
-只输出JSON数组本身。`,
+Output only the JSON array itself.`,
       },
     ],
   });
 
   const textBlock = response.content.find((b) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") {
-    throw new Error("LLM未返回文本内容");
+    throw new Error("LLM did not return any text content");
   }
 
   const cleaned = textBlock.text.replace(/```json|```/g, "").trim();

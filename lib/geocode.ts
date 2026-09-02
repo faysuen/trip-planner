@@ -4,9 +4,11 @@ import { Poi } from "./geo/types";
 const MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
 
 /**
- * 把LLM给出的候选点名称逐个做地理编码，拿到真实经纬度。
- * 解析失败的点位直接丢弃（而不是让LLM瞎猜坐标），
- * 这一步是保证"聚类算法基于真实坐标而非幻觉坐标"的关键防线。
+ * Geocodes each LLM-suggested place name into a real lat/lng coordinate
+ * (via the Mapbox Geocoding API). Points that fail to resolve are simply
+ * dropped, rather than letting the LLM guess a coordinate — this is the
+ * key safeguard that ensures the clustering algorithm always runs on real
+ * coordinates, never hallucinated ones.
  */
 export async function geocodeCandidates(
   candidates: CandidatePoi[],

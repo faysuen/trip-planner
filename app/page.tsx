@@ -35,12 +35,12 @@ export default function Home() {
         body: JSON.stringify(values),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "生成失败");
+      if (!res.ok) throw new Error(data.error || "Generation failed");
 
       setResult(data);
       setActiveDay(0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "生成失败，请重试");
+      setError(e instanceof Error ? e.message : "Generation failed, please try again");
     } finally {
       setLoading(false);
     }
@@ -61,13 +61,13 @@ export default function Home() {
     <main className="mx-auto w-full max-w-md px-5 py-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="font-display text-xl">
-          {result.itinerary.destination} · {result.itinerary.days.length}天行程
+          {result.itinerary.destination} · {result.itinerary.days.length}-day trip
         </h1>
         <button
           onClick={() => setResult(null)}
           className="text-sm text-ink/60 border border-ink/15 rounded-lg px-3 py-1.5"
         >
-          修改
+          Edit
         </button>
       </div>
 
@@ -86,7 +86,7 @@ export default function Home() {
             }`}
           >
             <span className={`w-2 h-2 rounded-full ${dayColorClass(i)}`} />
-            第{d.day}天
+            Day {d.day}
           </button>
         ))}
       </div>
@@ -98,7 +98,7 @@ export default function Home() {
       <DayList day={result.itinerary.days[activeDay]} dayIndex={activeDay} />
 
       <p className="text-xs text-ink/40 mt-6">
-        同色点位已按辐射圈聚类，虚线为建议访问顺序
+        Stops in the same color are clustered by radius; the dashed line shows the suggested visiting order.
       </p>
     </main>
   );

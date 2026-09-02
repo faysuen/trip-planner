@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "一键生成旅行行程",
-  description: "输入目的地和偏好，AI帮你排出不折返的每日行程",
+  title: "One-Click Trip Planner",
+  description: "Enter your destination and travel style — AI lays out a day-by-day itinerary with no backtracking",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh">
+    <html lang="en">
       <body className="min-h-screen">{children}</body>
     </html>
   );

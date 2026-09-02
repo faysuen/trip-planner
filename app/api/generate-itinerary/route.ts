@@ -12,35 +12,35 @@ export async function POST(req: NextRequest) {
 
     if (!destination || !days || !preference) {
       return NextResponse.json(
-        { error: "缺少必填字段：destination / days / preference" },
+        { error: "Missing required field: destination / days / preference" },
         { status: 400 }
       );
     }
 
-    // 1. LLM给候选点清单（不含坐标）
+    // 1. LLM suggests a candidate POI list (no coordinates)
     const candidates = await generateCandidatePois({
       destination,
       days,
       preference,
     });
 
-    // 2. 地理编码，拿真实坐标，解析失败的点位会被丢弃
+    // 2. Geocode to get real coordinates; points that fail to resolve are dropped
     const pois = await geocodeCandidates(candidates, destination);
 
     if (pois.length === 0) {
       return NextResponse.json(
-        { error: "未能解析出任何有效地点，请换个目的地重试" },
+        { error: "Couldn't resolve any valid locations — try a different destination" },
         { status: 422 }
       );
     }
 
-    // 3. 核心地理聚类 + 单日路线排序（与LLM解耦的独立算法模块）
+    // 3. Core geo clustering + within-day route ordering (independent of the LLM)
     const itinerary = planItinerary(destination, pois, Number(days));
 
-    // 4. 高风险地区提醒（对应PRD 5.5，问卷提交后即检测）
+    // 4. High-risk area advisory (PRD 5.5 — checked right after questionnaire submission)
     const risk = await getRiskAdvisory(destination);
 
-    // 5. 可选机票参考报价（对应PRD 5.4，仅在用户填写出发地/时间时查询）
+    // 5. Optional flight price estimate (PRD 5.4 — only queried if origin/date were provided)
     const flight =
       origin && departDate
         ? await getFlightQuote({ origin, destination, departDate })
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("generate-itinerary error:", err);
     return NextResponse.json(
-      { error: "行程生成失败，请稍后重试" },
+      { error: "Itinerary generation failed, please try again later" },
       { status: 500 }
     );
   }

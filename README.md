@@ -1,64 +1,76 @@
-# Trip Planner — MVP 骨架
+# Trip Planner — MVP Skeleton
 
-对应 PRD 中 P0 范围：极简问卷 → LLM生成候选景点 → 地理聚类/排序算法 →
-交互式地图 → 高风险地区提醒 → 可选机票参考报价。
+Covers the P0 scope from the PRD: minimal questionnaire → LLM-suggested
+candidate POIs → geographic clustering/ordering algorithm → interactive map
+→ high-risk area advisory → optional flight price estimate.
 
-## 目录结构
+## Directory structure
 
 ```
 app/
-  page.tsx                       主页面（问卷 ⇄ 结果 两个状态）
-  api/generate-itinerary/route.ts 编排整条生成链路的API
+  page.tsx                       Main page (toggles between questionnaire and results state)
+  api/generate-itinerary/route.ts Orchestrates the whole generation pipeline
   layout.tsx / globals.css
 components/
-  Questionnaire.tsx    三步问卷 + 可选出发地/时间
-  ItineraryMap.tsx      Mapbox地图，按天渲染标记与连线
-  DayList.tsx           按天展示的行程列表
-  RiskBanner.tsx         高风险地区警示横幅
-  FlightQuoteCard.tsx    机票参考报价卡片
+  Questionnaire.tsx    Three-step questionnaire + optional origin/date
+  ItineraryMap.tsx      Mapbox map, renders markers and lines per day
+  DayList.tsx           Day-by-day list view of the itinerary
+  RiskBanner.tsx         High-risk area advisory banner
+  FlightQuoteCard.tsx    Flight price estimate card
 lib/
   geo/
-    types.ts       Poi / DayPlan / ItineraryPlan 类型定义
-    distance.ts     haversine距离、质心、最大跨度计算
-    cluster.ts       ★ 核心算法：K-means按天分组 + 3-5km辐射圈约束
-    route.ts          单日内访问顺序：最近邻 + 2-opt优化
-    index.ts          对外唯一入口 planItinerary()
-  llm/generateCandidates.ts   调用Claude生成候选景点（不含坐标）
-  geocode.ts                   调用Mapbox Geocoding把候选点转真实坐标
-  risk.ts                      高风险地区数据源接口（当前是占位实现）
-  flights.ts                    机票报价数据源接口（当前是占位实现）
+    types.ts       Poi / DayPlan / ItineraryPlan type definitions
+    distance.ts     Haversine distance, centroid, max-span calculations
+    cluster.ts       ★ Core algorithm: K-means day grouping + 3-5km radius constraint
+    route.ts          Within-day visiting order: nearest-neighbor + 2-opt optimization
+    index.ts          Single entry point: planItinerary()
+  llm/generateCandidates.ts   Calls Claude to suggest candidate POIs (no coordinates)
+  geocode.ts                   Calls Mapbox Geocoding to turn candidates into real coordinates
+  risk.ts                      High-risk area data source interface (currently a placeholder)
+  flights.ts                    Flight price data source interface (currently a placeholder)
 ```
 
-## 本地跑起来
+## Running locally
 
 ```bash
 npm install
-cp .env.example .env.local   # 填入 ANTHROPIC_API_KEY / MAPBOX 相关token
+cp .env.example .env.local   # fill in ANTHROPIC_API_KEY and the Mapbox tokens
 npm run dev
 ```
 
-## 核心设计原则（对应PRD 5.2）
+## Core design principle (maps to PRD section 5.2)
 
-LLM 只负责"给候选景点清单+文案"，**绝不负责决定地理分组和访问顺序**。
-这两件事完全由 `lib/geo` 这个独立模块处理，好处：
-- 可以脱离LLM单独写单元测试（喂假的POI坐标数据进去验证聚类效果）
-- 后续想换算法（比如接入真实路网数据做更精确的通勤时间约束）时，
-  只需要改这一个模块，不影响上层的LLM调用和UI
+The LLM is only responsible for "suggesting candidate POIs + writing
+copy" — it is **never** responsible for deciding geographic groupings or
+visiting order. Both of those are handled entirely by the independent
+`lib/geo` module. Benefits:
+- It can be unit-tested completely separately from the LLM (feed it fake
+  POI coordinates to verify clustering quality)
+- If you later want to swap in a different algorithm (e.g. using real
+  road-network data for a tighter commute-time constraint), you only need
+  to touch this one module — the LLM call and UI layers stay untouched
 
-## 当前是占位、还没接真实数据源的部分
+## Currently stubbed / not yet wired to a real data source
 
-- `lib/risk.ts`：高风险地区判断，需要接美国国务院/英国FCDO等官方数据源
-- `lib/flights.ts`：机票报价，需要接Skyscanner/Amadeus等API
-- `lib/geocode.ts` 里的地理编码目前是逐个点位串行调用Mapbox API，
-  景点多时会比较慢，后续可以改成批量请求或加缓存层
+- `lib/risk.ts`: high-risk area detection — needs to connect to an
+  official source like the US State Department or UK FCDO advisories
+- `lib/flights.ts`: flight price estimates — needs a Skyscanner/Amadeus/
+  similar API
+- The geocoding in `lib/geocode.ts` currently calls the Mapbox API
+  sequentially per point, which will be slow for larger candidate lists;
+  consider batching or adding a cache layer later
 
-## 下一步优先做的事（对应之前讨论的开发顺序）
+## Suggested next steps (matches the build order discussed earlier)
 
-1. 先用假数据跑通问卷→地图的交互（当前骨架已经是"真实API接线"版本，
-   如果想先看纯前端效果，可以把 `app/api/generate-itinerary/route.ts`
-   临时换成返回mock数据）
-2. 接入真实 ANTHROPIC_API_KEY，验证候选景点生成质量、调prompt
-3. 用真实城市数据反复跑 `lib/geo/cluster.ts`，检验聚类效果
-   （建议先测东京、巴黎这种POI密度高、数据丰富的城市）
-4. 接入真实 MAPBOX token，验证地理编码成功率
-5. 把 `lib/risk.ts` 和 `lib/flights.ts` 换成真实数据源
+1. First get the questionnaire → map interaction working end to end with
+   fake data (the current skeleton is already wired to real APIs — if you
+   want to see the pure frontend behavior first, temporarily swap the real
+   API call in `app/api/generate-itinerary/route.ts` for a hardcoded mock
+   JSON response)
+2. Wire up a real `ANTHROPIC_API_KEY` and check the quality of the
+   suggested candidates; iterate on the prompt
+3. Run `lib/geo/cluster.ts` against real city data repeatedly to check
+   clustering quality (start with POI-dense, well-documented cities like
+   Tokyo or Paris)
+4. Wire up a real Mapbox token and check the geocoding success rate
+5. Replace `lib/risk.ts` and `lib/flights.ts` with real data sources

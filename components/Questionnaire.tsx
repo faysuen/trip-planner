@@ -11,10 +11,10 @@ export interface QuestionnaireValues {
 }
 
 const PREFERENCES = [
-  { id: "family", label: "亲子" },
-  { id: "speed", label: "特种兵" },
-  { id: "slow", label: "慢节奏" },
-  { id: "food", label: "美食驱动" },
+  { id: "family", label: "Family-friendly" },
+  { id: "speed", label: "Fast-paced" },
+  { id: "slow", label: "Slow travel" },
+  { id: "food", label: "Foodie" },
 ];
 
 export default function Questionnaire({
@@ -33,11 +33,11 @@ export default function Questionnaire({
 
   function handleSubmit() {
     if (!destination.trim()) {
-      setError("请先输入目的地");
+      setError("Please enter a destination");
       return;
     }
     if (!preference) {
-      setError("请选择一个人群偏好");
+      setError("Please pick a travel style");
       return;
     }
     setError("");
@@ -46,19 +46,19 @@ export default function Questionnaire({
 
   return (
     <div className="mx-auto w-full max-w-md px-5 py-8">
-      <h1 className="font-display text-2xl mb-6">去哪儿，怎么玩？</h1>
+      <h1 className="font-display text-2xl mb-6">Where to, and how?</h1>
 
-      <label className="block text-sm text-ink/60 mb-2">目的地</label>
+      <label className="block text-sm text-ink/60 mb-2">Destination</label>
       <input
         type="text"
         value={destination}
         onChange={(e) => setDestination(e.target.value)}
-        placeholder="如：Kyoto"
+        placeholder="e.g. Kyoto"
         className="w-full rounded-lg border border-ink/15 px-4 py-3 mb-5 text-base"
       />
 
       <label className="block text-sm text-ink/60 mb-2">
-        出行天数：<span className="text-ink font-medium">{days}</span> 天
+        Trip length: <span className="text-ink font-medium">{days}</span> day{days > 1 ? "s" : ""}
       </label>
       <input
         type="range"
@@ -69,7 +69,7 @@ export default function Questionnaire({
         className="w-full mb-5"
       />
 
-      <label className="block text-sm text-ink/60 mb-2">人群偏好</label>
+      <label className="block text-sm text-ink/60 mb-2">Travel style</label>
       <div className="grid grid-cols-2 gap-2 mb-6">
         {PREFERENCES.map((p) => (
           <button
@@ -89,14 +89,14 @@ export default function Questionnaire({
 
       <details className="mb-6">
         <summary className="text-sm text-ink/60 cursor-pointer">
-          可选：填写出发地和出发时间，看机票参考报价
+          Optional: add departure city and date to see a flight price estimate
         </summary>
         <div className="mt-3 space-y-3">
           <input
             type="text"
             value={origin}
             onChange={(e) => setOrigin(e.target.value)}
-            placeholder="出发城市，如：Los Angeles"
+            placeholder="Departure city, e.g. Los Angeles"
             className="w-full rounded-lg border border-ink/15 px-4 py-3 text-base"
           />
           <input
@@ -115,7 +115,7 @@ export default function Questionnaire({
         disabled={loading}
         className="w-full rounded-lg bg-ink text-paper py-3.5 text-base font-medium disabled:opacity-50"
       >
-        {loading ? "生成中…" : "生成行程"}
+        {loading ? "Generating…" : "Generate itinerary"}
       </button>
     </div>
   );

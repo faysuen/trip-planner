@@ -23,7 +23,7 @@ export default function ItineraryMap({
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  // 初始化地图，只跑一次
+  // Initialize the map once.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const firstDay = itinerary.days.find((d) => d.stops.length > 0);
@@ -43,7 +43,7 @@ export default function ItineraryMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 每次行程或选中天数变化时，重新画标记点和连线
+  // Redraw markers and route lines whenever the itinerary or selected day changes.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;

@@ -15,7 +15,7 @@ export default function DayList({ day, dayIndex }: { day: DayPlan; dayIndex: num
       <div className="flex items-center gap-2 mb-3">
         <span className={`w-2.5 h-2.5 rounded-full ${dayColorClass(dayIndex)}`} />
         <p className="text-sm text-ink/60">
-          第{day.day}天 · 当日辐射跨度约 {day.maxSpanKm} 公里
+          Day {day.day} · stops span about {day.maxSpanKm} km
         </p>
       </div>
       <div className="space-y-3">
@@ -31,7 +31,7 @@ export default function DayList({ day, dayIndex }: { day: DayPlan; dayIndex: num
             <div className="flex-1 min-w-0">
               <p className="text-base">{stop.name}</p>
               <p className="text-xs text-ink/50">
-                建议停留 {stop.durationMin} 分钟
+                Suggested time: {stop.durationMin} min
                 {stop.category ? ` · ${stop.category}` : ""}
               </p>
             </div>

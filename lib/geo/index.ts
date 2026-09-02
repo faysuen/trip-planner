@@ -6,9 +6,10 @@ import { centroid, maxPairwiseDistanceKm } from "./distance";
 export * from "./types";
 
 /**
- * 把 LLM 给出的候选景点列表，转换成按天分组、组内排好顺序的最终行程。
- * 这是整个地理智能模块对外暴露的唯一入口——
- * app层（问卷提交后的生成流程）只需要调这一个函数。
+ * Converts the LLM's candidate POI list into a final itinerary: grouped by
+ * day, with each day's stops already put in visiting order. This is the
+ * single entry point the geo module exposes — the app layer (the
+ * post-questionnaire generation flow) only ever needs to call this one function.
  */
 export function planItinerary(
   destination: string,

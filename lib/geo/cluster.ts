@@ -2,18 +2,22 @@ import { Poi } from "./types";
 import { haversineKm, centroid, maxPairwiseDistanceKm } from "./distance";
 
 /**
- * 核心地理聚类算法。
+ * Core geographic clustering algorithm.
  *
- * 设计原则（对应PRD 5.2）：
- * LLM 只负责给出候选景点清单，绝不负责决定"哪几个点位算一天"——
- * 地理分组必须由这个独立、可单元测试的模块来做，
- * 这样才能保证「同一天景点在合理辐射圈内、不折返」这个核心承诺。
+ * Design principle (maps to PRD section 5.2):
+ * The LLM is only ever responsible for suggesting candidate points of
+ * interest — it must NEVER decide "which points belong on which day."
+ * That grouping has to come from this independent, unit-testable module,
+ * which is the only way to actually guarantee the core promise: stops on
+ * the same day stay within a sane radius and the route doesn't backtrack.
  *
- * 算法分两步：
- * 1. K-means 按 numDays 分组（用 haversine 距离代替欧氏距离）
- * 2. 校验每组的最大跨度是否超过 maxRadiusKm；超过则把跨度最大的组
- *    拆成两组，并从点数最多的组里借一个点位给点数最少的组，
- *    保持总天数不变、尽量让每天点位数量均衡。
+ * The algorithm has two steps:
+ * 1. K-means grouping into `numDays` clusters (using haversine distance
+ *    instead of Euclidean distance)
+ * 2. Check whether each cluster's max span exceeds maxRadiusKm; if so,
+ *    split the widest cluster into two and borrow one point from the
+ *    largest cluster to give to the smallest, keeping the total number
+ *    of days fixed and the daily point count roughly balanced.
  */
 export function clusterPoisByDay(
   pois: Poi[],
@@ -30,7 +34,7 @@ export function clusterPoisByDay(
   return clusters;
 }
 
-/** K-means聚类，用haversine距离，随机初始化质心 + 若干次迭代收敛 */
+/** K-means clustering using haversine distance, with k-means++-style centroid initialization + iterative convergence */
 function kMeans(pois: Poi[], k: number, maxIterations = 20): Poi[][] {
   let centroids = pickInitialCentroids(pois, k);
   let assignment = new Array(pois.length).fill(-1);
@@ -38,7 +42,7 @@ function kMeans(pois: Poi[], k: number, maxIterations = 20): Poi[][] {
   for (let iter = 0; iter < maxIterations; iter++) {
     let changed = false;
 
-    // 分配每个点到最近的质心
+    // Assign each point to its nearest centroid
     const newAssignment = pois.map((p) => {
       let best = 0;
       let bestDist = Infinity;
@@ -56,7 +60,7 @@ function kMeans(pois: Poi[], k: number, maxIterations = 20): Poi[][] {
     assignment = newAssignment;
     if (!changed && iter > 0) break;
 
-    // 重新计算质心
+    // Recompute centroids
     centroids = centroids.map((_, idx) => {
       const members = pois.filter((_, i) => assignment[i] === idx);
       return members.length > 0 ? centroid(members) : centroids[idx];
@@ -68,7 +72,7 @@ function kMeans(pois: Poi[], k: number, maxIterations = 20): Poi[][] {
   return clusters;
 }
 
-/** 用 k-means++ 思路选初始质心，避免随机选到太近的点导致收敛差 */
+/** k-means++-style initial centroid selection, to avoid picking initial centroids too close together and getting poor convergence */
 function pickInitialCentroids(
   pois: Poi[],
   k: number
@@ -95,9 +99,12 @@ function pickInitialCentroids(
 }
 
 /**
- * 校验每组的最大跨度，超过 maxRadiusKm 的组拆成两个更小的子组，
- * 并把最小的组和最新拆出的组合并，保持总组数等于 numDays。
- * （简化启发式，不追求全局最优，只保证不出现"整天大折返"这个硬伤）
+ * Checks each cluster's max span; any cluster exceeding maxRadiusKm gets
+ * split into two smaller sub-clusters, and the smallest existing cluster
+ * absorbs the newly split-off group, keeping the total cluster count equal
+ * to numDays. (This is a simplified heuristic — it doesn't aim for a
+ * global optimum, just for avoiding the hard failure of "one day with a
+ * huge backtrack.")
  */
 function enforceRadiusConstraint(
   clusters: Poi[][],
@@ -105,7 +112,7 @@ function enforceRadiusConstraint(
   numDays: number
 ): Poi[][] {
   let result = [...clusters];
-  let safety = numDays * 3; // 防止极端数据下死循环
+  let safety = numDays * 3; // guards against infinite loops on extreme data
 
   while (safety-- > 0) {
     const spans = result.map((c) => maxPairwiseDistanceKm(c));
@@ -126,7 +133,7 @@ function enforceRadiusConstraint(
     }
   }
 
-  // 保证组数不多不少等于 numDays
+  // Ensure the cluster count is exactly numDays, no more, no less
   while (result.length > numDays) {
     const smallest = result.reduce(
       (minI, c, i, arr) => (c.length < arr[minI].length ? i : minI),
@@ -145,7 +152,7 @@ function enforceRadiusConstraint(
   return result;
 }
 
-/** 让每天点位数量不要过于悬殊（最多最少相差不超过2个），从最多的组挪给最少的组 */
+/** Keeps daily stop counts from getting too lopsided (max/min difference capped at 2) by moving points from the largest group to the smallest */
 function balanceClusterSizes(clusters: Poi[][]): Poi[][] {
   const result = clusters.map((c) => [...c]);
   let safety = 20;
@@ -156,7 +163,7 @@ function balanceClusterSizes(clusters: Poi[][]): Poi[][] {
     const minIdx = sizes.indexOf(Math.min(...sizes));
     if (sizes[maxIdx] - sizes[minIdx] <= 2) break;
 
-    // 从最多的一组里，挑离最少组的中心最近的点位挪过去
+    // From the largest group, move the point closest to the smallest group's centroid
     const minCentroid = centroid(result[minIdx].length ? result[minIdx] : [{ lat: 0, lng: 0 }]);
     const donorGroup = result[maxIdx];
     let bestPoiIdx = 0;

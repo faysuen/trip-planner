@@ -1,14 +1,16 @@
 /**
- * 用 Haversine 公式计算两个经纬度坐标之间的直线距离（公里）。
- * 这是聚类和路线排序算法的基础距离函数——注意这只是直线距离的近似值，
- * 不是真实道路/步行距离；MVP阶段先用它做聚类和粗排，
- * 后续可以把关键路段换成地图API返回的真实通勤时间做二次校验。
+ * Computes the straight-line distance (km) between two lat/lng coordinates
+ * using the Haversine formula. This is the base distance function used by
+ * the clustering and route-ordering algorithms — note it's only a straight-line
+ * approximation, not real road/walking distance. It's fine for MVP-stage
+ * clustering and rough ordering; later, key legs can be cross-checked against
+ * real commute times from a maps API.
  */
 export function haversineKm(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number }
 ): number {
-  const R = 6371; // 地球半径，公里
+  const R = 6371; // Earth's radius, km
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
   const lat1 = toRad(a.lat);
@@ -25,7 +27,7 @@ function toRad(deg: number): number {
   return (deg * Math.PI) / 180;
 }
 
-/** 一组点位中任意两点间的最大距离（公里），用于校验是否超出辐射圈 */
+/** Max pairwise distance (km) among a set of points — used to check whether a day's stops exceed the target radius */
 export function maxPairwiseDistanceKm(
   points: { lat: number; lng: number }[]
 ): number {
@@ -39,7 +41,7 @@ export function maxPairwiseDistanceKm(
   return max;
 }
 
-/** 一组点位的地理中心（简单算术平均，小范围内足够准确） */
+/** Geographic centroid of a set of points (simple arithmetic mean — accurate enough over small areas) */
 export function centroid(
   points: { lat: number; lng: number }[]
 ): { lat: number; lng: number } {

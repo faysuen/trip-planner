@@ -3,20 +3,20 @@ export interface Poi {
   name: string;
   lat: number;
   lng: number;
-  /** 建议停留时长（分钟） */
+  /** Suggested time on site, in minutes */
   durationMin: number;
-  /** 简单的开放时段，如 "09:00-18:00"；不确定时留空 */
+  /** Simple opening hours string, e.g. "09:00-18:00"; leave blank if unknown */
   openHours?: string;
   category?: string;
 }
 
 export interface DayPlan {
   day: number;
-  /** 已按访问顺序排好的点位 */
+  /** Stops already ordered by suggested visiting sequence */
   stops: Poi[];
-  /** 该天所有点位的地理中心（用于地图定位/展示） */
+  /** Geographic center of this day's stops (used for map centering/display) */
   center: { lat: number; lng: number };
-  /** 该天点位之间的最大直线跨度（公里），用于校验是否超出3-5km辐射圈 */
+  /** Max straight-line spread (km) between this day's stops — used to verify the 3-5km radius constraint */
   maxSpanKm: number;
 }
 

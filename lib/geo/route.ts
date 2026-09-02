@@ -2,10 +2,11 @@ import { Poi } from "./types";
 import { haversineKm } from "./distance";
 
 /**
- * 单日内景点访问顺序排序（简化版TSP）。
- * 先用最近邻贪心算法给出一个初始顺序，再用 2-opt 做局部优化，
- * 减少"来回穿插"的情况。景点数量在个位数（单日一般3-6个点），
- * 这个复杂度完全够用，不需要引入更重的求解器。
+ * Orders a single day's stops into a visiting sequence (a simplified TSP).
+ * Starts with a nearest-neighbor greedy pass for an initial order, then
+ * runs 2-opt local optimization to cut down on "zig-zagging." Since a
+ * single day usually only has a handful of stops (3-6), this complexity
+ * is more than enough — no need for a heavier solver.
  */
 export function orderStopsWithinDay(stops: Poi[]): Poi[] {
   if (stops.length <= 2) return stops;
@@ -42,7 +43,7 @@ function routeLength(route: Poi[]): number {
   return total;
 }
 
-/** 2-opt：反复尝试交换两段路径，只要能缩短总距离就采纳，直到没有改进为止 */
+/** 2-opt: repeatedly tries swapping two path segments, keeping the swap whenever it shortens the total distance, until no more improvement is found */
 function twoOpt(route: Poi[]): Poi[] {
   let best = [...route];
   let improved = true;
